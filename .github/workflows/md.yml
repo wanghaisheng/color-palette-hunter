@@ -1,0 +1,39 @@
+```yaml
+name: Generate App Markdown
+
+on:
+  push:
+    branches:
+      - main
+ #  schedule:
+ #    - cron: '0 0 * * *' # Run every day at midnight (UTC)
+
+jobs:
+  generate-md:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Set Environment Variables
+      run: |
+        echo "DATABASE_API_URL=${{ secrets.DATABASE_API_URL }}" >> $GITHUB_ENV
+        echo "REACT_APP_GOOGLE_API_KEY=${{ secrets.REACT_APP_GOOGLE_API_KEY }}" >> $GITHUB_ENV
+
+    - name: Generate Markdown Files
+      run: node src/api-runner.js
+
+    - name: Upload Generated Files
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-markdown
+        path: public/config
+```
