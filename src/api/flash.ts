@@ -5,13 +5,32 @@ import { AppData } from '../types';
 const store = require('app-store-scraper');
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
 const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
 
-const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY as string);
-// IMPORTANT: You need to specify the model name with version explicitly for experimental models
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-preview-0401" });
+interface ModelInfo {
+    name: string;
+    label: string;
+    provider: string;
+    maxTokenAllowed: number;
+  }
+
+const staticModels: ModelInfo[] = [
+    { name: 'gemini-1.5-flash-latest', label: 'Gemini 1.5 Flash', provider: 'Google', maxTokenAllowed: 8192 },
+    { name: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash', provider: 'Google', maxTokenAllowed: 8192 },
+    { name: 'gemini-1.5-flash-002', label: 'Gemini 1.5 Flash-002', provider: 'Google', maxTokenAllowed: 8192 },
+    { name: 'gemini-1.5-flash-8b', label: 'Gemini 1.5 Flash-8b', provider: 'Google', maxTokenAllowed: 8192 },
+    { name: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro', provider: 'Google', maxTokenAllowed: 8192 },
+    { name: 'gemini-1.5-pro-002', label: 'Gemini 1.5 Pro-002', provider: 'Google', maxTokenAllowed: 8192 },
+    { name: 'gemini-exp-1206', label: 'Gemini exp-1206', provider: 'Google', maxTokenAllowed: 8192 },
+    {name: 'gemini-pro-vision', label: 'Gemini Pro Vision', provider: 'Google', maxTokenAllowed: 8192 }
+  ];
+
+
+const defaultModel = staticModels.find(model => model.name === 'gemini-1.5-flash-latest') || staticModels.find(model => model.name === 'gemini-pro-vision')!;
+
+let modelInstance: GenerativeModel;
 
 interface GeminiResponse {
   text(): Promise<string>;
@@ -77,6 +96,11 @@ async function generateMarkdownWithGemini(appData: AppData, screenshotPaths: str
         return null;
     }
 
+     if (!modelInstance){
+      const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY as string);
+      modelInstance = genAI.getGenerativeModel({model: defaultModel.name})
+    }
+
     const { title: appName, description: appDescription, genres, appId } = appData;
     const images = [];
 
@@ -128,7 +152,7 @@ async function generateMarkdownWithGemini(appData: AppData, screenshotPaths: str
             The response needs to be a complete markdown format and do not include any comments.
         `;
     try {
-        const geminiResponse = await model.generateContent({
+        const geminiResponse = await modelInstance.generateContent({
             contents: [{
                 parts: [{text:prompt}, ...images]
               }]
