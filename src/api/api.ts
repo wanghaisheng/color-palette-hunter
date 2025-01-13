@@ -1,4 +1,3 @@
-```typescript
 import axios from 'axios';
 import { ColorThief } from 'colorthief';
 import sharp from 'sharp';
@@ -6,7 +5,12 @@ import { AppData } from '../types';
 const store = require('app-store-scraper');
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+
 const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
+const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY as string);
+const model = genAI.getGenerativeModel({ model: "gemini-pro-vision-1.5-flash" });
 
 interface GeminiResponse {
   text(): Promise<string>;
@@ -66,7 +70,7 @@ try {
 }
 }
 
-async function generateMarkdownWithGemini(appData: AppData, screenshotPaths: string[], colorPalette: string[] | null) {
+async function generateMarkdownWithGemini(appData: AppData, screenshotPaths: string[], colorPalette: string[] | null): Promise<string | null> {
     if (!GOOGLE_API_KEY) {
         console.error('Gemini API key not found. Check your .env.local file');
         return null;
@@ -123,8 +127,6 @@ async function generateMarkdownWithGemini(appData: AppData, screenshotPaths: str
             The response needs to be a complete markdown format and do not include any comments.
         `;
     try {
-        const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
         const geminiResponse = await model.generateContent({
             contents: [{
                 parts: [{text:prompt}, ...images]
@@ -147,4 +149,3 @@ const api = {
 };
 
 export default api;
-```
